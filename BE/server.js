@@ -1,76 +1,71 @@
+require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
+const { db, initializeDatabase } = require('./db');
+const adminRoutes = require('./routes/admin');
+const { router: participantRoutes, setIoInstance } = require('./routes/participant');
+const { unlockRaffle } = require('./services/raffleService');
 
 const app = express();
-const port = 3001;
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Allow all origins for development, restrict in production
+        methods: ["GET", "POST"]
+    }
+});
+
+const port = process.env.PORT || 3001;
+const SECRET_IDENTIFY_TEXT = process.env.SECRET_IDENTIFY_TEXT;
+
+// Ensure SECRET_IDENTIFY_TEXT is set
+if (!SECRET_IDENTIFY_TEXT) {
+    console.error('FATAL ERROR: SECRET_IDENTIFY_TEXT is not defined in .env file.');
+    process.exit(1);
+}
 
 app.use(cors());
 app.use(express.json());
 
-// Connect to SQLite database
-const db = new sqlite3.Database('./chillfishing.db', (err) => {
+// Initialize database and set initial secret_identify_text
+initializeDatabase();
+db.run('UPDATE settings SET secret_identify_text = ? WHERE id = 1', [SECRET_IDENTIFY_TEXT], (err) => {
     if (err) {
-        console.error('Error connecting to database:', err.message);
-        return;
+        console.error('Error updating secret_identify_text in settings:', err.message);
+        process.exit(1);
     }
-    console.log('Connected to the chillfishing SQLite database.');
+    console.log('Secret identify text initialized in database.');
 });
 
-// Create items table if it doesn't exist
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT
-        )
-    `, (err) => {
-        if (err) {
-            console.error('Error creating table:', err.message);
-            return;
+// Pass io instance to participant routes
+setIoInstance(io);
+
+// API Routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/participant', participantRoutes);
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log(`Client connected: ${socket.id}`);
+
+    socket.on('nextRaffle', (data) => {
+        // Authenticate the nextRaffle event from projection view
+        if (data && data.secret_identify_text === SECRET_IDENTIFY_TEXT) {
+            unlockRaffle();
+            io.emit('raffleUnlocked');
+            console.log('Raffle unlocked by projection view.');
+        } else {
+            console.warn('Unauthorized attempt to unlock raffle via Socket.IO');
         }
-        console.log('Items table created or already exists.');
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`Client disconnected: ${socket.id}`);
     });
 });
 
-// Routes
-app.get('/api/items', (req, res) => {
-    db.all('SELECT * FROM items', [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json({ data: rows });
-    });
-});
-
-app.post('/api/items', (req, res) => {
-    const { name, description } = req.body;
-    if (!name) {
-        res.status(400).json({ error: 'Name is required' });
-        return;
-    }
-    db.run('INSERT INTO items (name, description) VALUES (?, ?)', [name, description], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.status(201).json({ id: this.lastID, name, description });
-    });
-});
-
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Backend server listening at http://localhost:${port}`);
-});
-
-// Close the database connection when the server shuts down
-process.on('SIGINT', () => {
-    db.close((err) => {
-        if (err) {
-            console.error('Error closing database:', err.message);
-            return;
-        }
-        console.log('Closed the SQLite database connection.');
-    });
 });
