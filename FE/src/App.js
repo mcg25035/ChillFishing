@@ -1,85 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ParticipantEntryPage from './pages/ParticipantEntryPage';
+import RafflePage from './pages/RafflePage';
+import ProjectionViewPage from './pages/ProjectionViewPage';
+import './App.css'; // Import the main CSS file
 
 function App() {
-  const [items, setItems] = useState([]);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemDescription, setNewItemDescription] = useState('');
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  const fetchItems = async () => {
-    try {
-      const response = await axios.get('http://localhost:3001/api/items');
-      setItems(response.data.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching items:', err);
-      setError('Failed to fetch items. Please ensure the backend server is running.');
-    }
-  };
-
-  const handleAddItem = async (e) => {
-    e.preventDefault();
-    if (!newItemName.trim()) {
-      setError('Item name cannot be empty.');
-      return;
-    }
-
-    try {
-      await axios.post('http://localhost:3001/api/items', {
-        name: newItemName,
-        description: newItemDescription,
-      });
-      setNewItemName('');
-      setNewItemDescription('');
-      fetchItems();
-      setError(null);
-    } catch (err) {
-      console.error('Error adding item:', err);
-      setError('Failed to add item. Please try again.');
-    }
-  };
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>ChillFishing App</h1>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <form onSubmit={handleAddItem}>
-          <input
-            type="text"
-            placeholder="Item Name"
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Item Description (optional)"
-            value={newItemDescription}
-            onChange={(e) => setNewItemDescription(e.target.value)}
-          />
-          <button type="submit">Add Item</button>
-        </form>
-        <h2>Items from Backend:</h2>
-        {items.length === 0 ? (
-          <p>No items found. Add some above!</p>
-        ) : (
-          <ul>
-            {items.map((item) => (
-              <li key={item.id}>
-                <strong>{item.name}</strong>: {item.description || 'No description'}
+    <Router>
+      <AuthProvider>
+        <div className="App">
+          <nav className="navbar">
+            <ul>
+              <li>
+                <Link to="/">Participant Entry</Link>
               </li>
-            ))}
-          </ul>
-        )}
-      </header>
-    </div>
+              <li>
+                <Link to="/admin">Admin Login</Link>
+              </li>
+              <li>
+                <Link to="/projection">Projection View</Link>
+              </li>
+            </ul>
+          </nav>
+
+          <Routes>
+            <Route path="/" element={<ParticipantEntryPage />} />
+            <Route path="/admin" element={<AdminLoginPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/raffle" element={<RafflePage />} />
+            <Route path="/projection" element={<ProjectionViewPage />} />
+          </Routes>
+        </div>
+      </AuthProvider>
+    </Router>
   );
 }
 
