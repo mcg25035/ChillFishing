@@ -1,6 +1,6 @@
-# Frontend Implementation Details for ChillFishing Raffle Website
+# Frontend Implementation Details for 悠閒釣魚抽獎 Website
 
-This document outlines the implementation details for the frontend of the ChillFishing Raffle Website, developed using React, Axios, and Socket.IO Client.
+This document outlines the implementation details for the frontend of the 悠閒釣魚抽獎 Website, developed using React, Axios, and Socket.IO Client.
 
 ## Project Structure
 

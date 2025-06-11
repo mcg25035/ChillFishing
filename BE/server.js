@@ -50,8 +50,8 @@ io.on('connection', (socket) => {
     socket.on('nextRaffle', (data) => {
         // Authenticate the nextRaffle event from projection view
         if (data && data.secret_identify_text === SECRET_IDENTIFY_TEXT) {
-            unlockRaffle();
-            io.emit('raffleUnlocked', false);
+            unlockRaffle(); // Unlock the raffle
+            io.emit('raffleUnlocked', false); // Notify clients that raffle is unlocked
             console.log('Raffle unlocked by projection view.');
         } else {
             console.warn('Unauthorized attempt to unlock raffle via Socket.IO');

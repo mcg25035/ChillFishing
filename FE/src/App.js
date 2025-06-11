@@ -16,13 +16,13 @@ function App() {
           <nav className="navbar">
             <ul>
               <li>
-                <Link to="/">Participant Entry</Link>
+                <Link to="/">參與者入口</Link>
               </li>
               <li>
-                <Link to="/admin">Admin Login</Link>
+                <Link to="/admin">管理員登入</Link>
               </li>
               <li>
-                <Link to="/projection">Projection View</Link>
+                <Link to="/projection">投影頁面登入</Link>
               </li>
             </ul>
           </nav>

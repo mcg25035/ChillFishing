@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import socket from '../utils/socket';
+import FishingAnimation from '../components/FishingAnimation'; // Import the new component
 
 const RafflePage = () => {
   const [raffleLocked, setRaffleLocked] = useState(true); // Assume locked initially, rely on socket for unlock
   const [raffleResult, setRaffleResult] = useState(null);
   const [error, setError] = useState('');
+
+  const fishingAnimationRef = useRef(null); // Ref for the FishingAnimation component
 
   // No initial fetch for raffle status, rely solely on Socket.IO events
   useEffect(() => {
@@ -15,16 +18,22 @@ const RafflePage = () => {
       setRaffleLocked(isLocked);
       if (isLocked) {
         setRaffleResult(null); // Clear previous result when locked
+        fishingAnimationRef.current?.reset(); // Reset animations
       }
     });
 
     socket.on('raffleUnlocked', () => {
       setRaffleLocked(false);
+      fishingAnimationRef.current?.reset(); // Ensure idle when unlocked
     });
 
     socket.on('raffleResult', (result) => {
-      setRaffleResult(result);
+      setRaffleResult({ ...result, animationClass: '' }); // Clear animation class initially
       setRaffleLocked(true); // Lock after a result is displayed
+      // Prize float-up animation starts after 2 seconds
+      setTimeout(() => {
+        setRaffleResult((prev) => ({ ...prev, animationClass: 'float-up' }));
+      }, 2000);
     });
 
     socket.on('connect_error', (err) => {
@@ -43,53 +52,54 @@ const RafflePage = () => {
 
   const handleDrawRaffle = async () => {
     setError('');
-    setRaffleResult(null);
+    setRaffleResult(null); // Clear previous result before new draw
+    fishingAnimationRef.current?.start(); // Trigger animations
+
     try {
-      // Backend /raffle endpoint expects participant_id and optionally token
-      // For simplicity, we'll assume participant_id is handled by backend session or not strictly required for public
-      // If private, the token would have been used at entry, so we don't need to send it again here for the draw.
-      // However, the backend's /raffle endpoint *does* expect participant_id.
       const raffleToken = sessionStorage.getItem('raffle_token');
-      // Backend /raffle endpoint expects participant_id and optionally token
-      const participantName = sessionStorage.getItem('participant_name'); // Get participant name from sessionStorage
+      const participantName = sessionStorage.getItem('participant_name');
       const response = await api.post('/participant/raffle', {
-        name: participantName, // Send participant name
-        token: raffleToken, // Send token if available
+        name: participantName,
+        token: raffleToken,
       });
-      setRaffleResult(response.data.result); // Backend returns { success: true, result: ... }
-      setRaffleLocked(true); // Lock after drawing
+      // The actual result will be set by the 'raffleResult' socket event
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to draw raffle. Please try again.');
       console.error('Draw raffle error:', err);
+      fishingAnimationRef.current?.reset(); // Reset all animations on error
     }
   };
 
-  // No loading state based on API fetch, only socket connection
+  const handleAnimationComplete = () => {
+    // This callback can be used if RafflePage needs to do something after animation completes
+    // For now, it's not strictly necessary as prize display is handled by socket event
+  };
 
   return (
     <div className="container raffle-page">
-      <h2>ChillFishing Raffle</h2>
+      <h2>悠閒釣魚抽獎</h2>
       {error && <p className="error-message">{error}</p>}
+
+      <FishingAnimation ref={fishingAnimationRef} onAnimationComplete={handleAnimationComplete} />
 
       <div className="raffle-status">
         {raffleLocked ? (
-          <p className="locked-message">Please wait for the next draw.</p>
+          <p className="locked-message">請等待主持人開放下個抽獎</p>
         ) : (
           <button onClick={handleDrawRaffle} disabled={raffleLocked}>
-            Draw!
+            抽獎!
           </button>
         )}
       </div>
 
       {raffleResult && (
-        <div className="raffle-result">
-          <h3>Raffle Result:</h3>
+        <div className={`raffle-result ${raffleResult.animationClass || ''}`}>
+          <h3>結果:</h3>
           {raffleResult.type === 'prize' ? (
-            <p className="prize-won">Congratulations! You won a {raffleResult.prize.name}!</p>
+            <p className="prize-won">恭喜，你獲得了 {raffleResult.prize.name}!</p>
           ) : (
             <p className="consolation-message">{raffleResult.message}</p>
           )}
-          {/* Optional: Add simple animation here */}
         </div>
       )}
     </div>

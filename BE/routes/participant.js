@@ -120,7 +120,7 @@ const executeRaffleLogic = async (participantIdentifier, res) => { // Renamed pa
     const raffleState = getRaffleState();
     if (raffleState) {
         io.emit('raffleLocked', true); // Notify clients that raffle is locked
-        return res.status(423).json({ success: false, message: 'Raffle is currently locked. Please wait for the next draw.' });
+        return res.status(423).json({ success: false, message: 'Raffle is currently locked. 請等待主持人開放下個抽獎' });
     }
 
     try {

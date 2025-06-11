@@ -27,6 +27,9 @@ const performRaffle = async (participantIdentifier) => { // Changed participantI
         }
 
         lockRaffle(); // Lock raffle immediately
+        if (io) {
+            io.emit('raffleStarted'); // Emit event to start animation on projection view
+        }
 
         db.all('SELECT id, name, remaining_quantity, probability FROM prizes WHERE remaining_quantity > 0', [], (err, prizes) => {
             if (err) {

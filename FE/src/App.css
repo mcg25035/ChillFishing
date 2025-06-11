@@ -249,6 +249,7 @@ button:disabled {
   border: 2px solid #3498db;
   border-radius: 10px;
   background-color: #eaf7ff;
+  opacity: 0; /* Initially hidden */
 }
 
 .raffle-page .raffle-result h3 {
@@ -336,4 +337,96 @@ button:disabled {
 
 .projection-view .next-raffle-button:hover {
   background-color: #2980b9;
+}
+
+/* Fishing Animation Styles */
+.fishing-animation-container {
+  position: relative;
+  width: 100%;
+  height: 200px; /* Adjust as needed */
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.fishing-rod {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(0deg);
+  transform-origin: top center;
+  width: 150px; /* Adjust size as needed */
+  height: auto;
+  transition: transform 0.6s ease-out;
+  z-index: 2;
+}
+
+.fishing-bobber {
+  opacity: 0;
+}
+
+.fishing-bobber.grow {
+  opacity: 1;
+  animation: bobber-grow 10s forwards;
+}
+
+.fishing-rod.swing-down {
+  animation: rod-swing-down 0.75s forwards;
+}
+
+.fishing-rod.swing-reverse {
+  animation: rod-swing-reverse 0.375s forwards;
+}
+
+.fishing-rod.fly-away {
+  animation: rod-fly-away 0.75s forwards;
+}
+
+.fishing-bobber {
+  position: absolute;
+  top: 100px; /* Adjust initial position relative to rod */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px; /* Adjust size as needed */
+  height: auto;
+  transition: transform 0.6s ease-out;
+  z-index: 1;
+}
+/* Animations */
+@keyframes rod-swing-down {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(-15deg); }
+}
+
+@keyframes rod-swing-reverse {
+  from { transform: translateX(-50%) rotate(-15deg); }
+  to { transform: translateX(-50%) rotate(45deg); }
+}
+
+@keyframes rod-fly-away {
+  from { transform: translateX(-50%) rotate(45deg); opacity: 1; }
+  to { transform: translateX(calc(-50% - 150px)) rotate(45deg) translateY(-200px); opacity: 0; }
+}
+
+@keyframes bobber-grow { /* Changed from bobber-sink */
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(3); } /* Grow instead of sink */
+}
+
+.raffle-result.float-up {
+  animation: prize-float-up 0.625s ease-out forwards; /* Adjusted duration */
+}
+
+@keyframes prize-float-up {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hidden {
+  display: none;
 }

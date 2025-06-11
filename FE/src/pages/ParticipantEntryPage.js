@@ -30,39 +30,39 @@ const ParticipantEntryPage = () => {
         navigate('/raffle');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to enter raffle. Please try again.');
+      setError(err.response?.data?.message || '進入抽獎失敗。請再試一次。');
       console.error('Enter raffle error:', err);
     }
   };
 
   return (
     <div className="container">
-      <h2>Welcome to ChillFishing Raffle!</h2>
+      <h2>歡迎來到悠閒釣魚抽獎活動！</h2>
       {error && <p className="error-message">{error}</p>}
 
       <form onSubmit={handleEnterRaffle} className="entry-form">
-        <p>Please enter your name and/or token to participate.</p>
+        <p>請輸入您的姓名和/或代幣以參與。</p>
         <div className="form-group">
-          <label htmlFor="name">Your Name (optional):</label>
+          <label htmlFor="name">您的姓名 (選填):</label>
           <input
             type="text"
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder="輸入您的姓名"
           />
         </div>
         <div className="form-group">
-          <label htmlFor="token">Raffle Token (optional for public activity):</label>
+          <label htmlFor="token">抽獎代幣 (公開活動選填):</label>
           <input
             type="text"
             id="token"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder="Enter your token"
+            placeholder="輸入您的代幣"
           />
         </div>
-        <button type="submit">Enter Raffle</button>
+        <button type="submit">進入抽獎</button>
       </form>
     </div>
   );

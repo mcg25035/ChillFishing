@@ -1,4 +1,4 @@
-# Backend Prompt for ChillFishing Raffle Website
+# Backend Prompt for 悠閒釣魚抽獎 Website
 
 ## Project Goal
 Implement the backend service for a fishing-themed raffle website. This service will manage raffle logic, prize distribution, participant access, and administrator controls.

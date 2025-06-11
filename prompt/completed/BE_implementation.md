@@ -1,6 +1,6 @@
 # Backend Implementation Status
 
-This document outlines the completion of the backend implementation for the ChillFishing Raffle Website, as per the requirements in `prompt/GLOBAL.prompt.md` and `prompt/BE.prompt.md`.
+This document outlines the completion of the backend implementation for the 悠閒釣魚抽獎 Website, as per the requirements in `prompt/GLOBAL.prompt.md` and `prompt/BE.prompt.md`.
 
 ## Completed Tasks:
 

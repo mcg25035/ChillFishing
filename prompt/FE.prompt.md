@@ -1,4 +1,4 @@
-# Frontend Prompt for ChillFishing Raffle Website
+# Frontend Prompt for 悠閒釣魚抽獎 Website
 
 ## Project Goal
 Develop the frontend interface for a fishing-themed raffle website. This interface will provide both an administrator panel for managing the activity and a participant view for engaging in the raffle.

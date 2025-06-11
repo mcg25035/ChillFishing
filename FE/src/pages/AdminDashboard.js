@@ -31,7 +31,7 @@ const AdminDashboard = () => {
       setPrizes(response.data);
       console.log('Fetched prizes:', response.data); // Add console log
     } catch (err) {
-      setError('Failed to fetch prizes.');
+      setError('無法獲取獎品。');
       console.error('Fetch prizes error:', err);
     }
   }, []);
@@ -41,7 +41,7 @@ const AdminDashboard = () => {
       const response = await api.get('/admin/consolation-messages');
       setConsolationMessages(response.data);
     } catch (err) {
-      setError('Failed to fetch consolation messages.');
+      setError('無法獲取安慰獎訊息。');
       console.error('Fetch consolation messages error:', err);
     }
   }, []);
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
       const response = await api.get('/admin/settings/public');
       setActivityStatus(response.data.is_public); // Backend returns is_public
     } catch (err) {
-      setError('Failed to fetch activity status.');
+      setError('無法獲取活動狀態。');
       console.error('Fetch activity status error:', err);
     }
   }, []);
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
       setTokens(response.data);
       console.log('Fetched tokens:', response.data); // Add console log
     } catch (err) {
-      setError('Failed to fetch tokens.');
+      setError('無法獲取代幣。');
       console.error('Fetch tokens error:', err);
     }
   }, []);
@@ -91,17 +91,17 @@ const AdminDashboard = () => {
     socket.connect();
     socket.on('prizesUpdated', (updatedPrizes) => {
       setPrizes(updatedPrizes);
-      showNotification('Prizes updated in real-time.', 'success');
+      showNotification('獎品已即時更新。', 'success');
     });
 
     socket.on('tokensUpdated', (updatedTokens) => {
       setTokens(updatedTokens);
-      showNotification('Tokens updated in real-time.', 'success');
+      showNotification('代幣已即時更新。', 'success');
     });
 
     socket.on('connect_error', (err) => {
       console.error('Socket connection error in AdminDashboard:', err);
-      setError('Real-time connection failed. Please refresh.');
+      setError('即時連線失敗。請重新整理。');
     });
 
     return () => {
@@ -135,9 +135,9 @@ const AdminDashboard = () => {
       const newStatus = !activityStatus;
       await api.post('/admin/settings/public', { is_public: newStatus });
       setActivityStatus(newStatus);
-      showNotification(`Activity set to ${newStatus ? 'public' : 'private'} successfully.`, 'success');
+      showNotification(`活動已成功設定為${newStatus ? '公開' : '私人'}。`, 'success');
     } catch (err) {
-      showNotification('Failed to update activity status.', 'error');
+      showNotification('更新活動狀態失敗。', 'error');
       console.error('Update activity status error:', err);
     }
   };
@@ -145,15 +145,15 @@ const AdminDashboard = () => {
   const handleGenerateTokens = async (e) => {
     e.preventDefault();
     if (numTokensToGenerate <= 0) {
-      showNotification('Number of tokens must be positive.', 'error');
+      showNotification('代幣數量必須為正數。', 'error');
       return;
     }
     try {
       await api.post('/admin/tokens/generate', { count: numTokensToGenerate });
-      showNotification(`${numTokensToGenerate} tokens generated successfully.`, 'success');
+      showNotification(`${numTokensToGenerate} 個代幣已成功生成。`, 'success');
       fetchTokens(); // Refresh token list
     } catch (err) {
-      showNotification('Failed to generate tokens.', 'error');
+      showNotification('生成代幣失敗。', 'error');
       console.error('Generate tokens error:', err);
     }
   };
@@ -170,15 +170,15 @@ const AdminDashboard = () => {
   };
 
   const handleDeletePrize = async (prizeId) => {
-    if (!window.confirm('Are you sure you want to delete this prize?')) {
+    if (!window.confirm('您確定要刪除此獎品嗎？')) {
       return;
     }
     try {
       await api.delete(`/admin/prizes/${prizeId}`);
-      showNotification('Prize deleted successfully.', 'success');
+      showNotification('獎品已成功刪除。', 'success');
       fetchPrizes();
     } catch (err) {
-      showNotification('Failed to delete prize.', 'error');
+      showNotification('刪除獎品失敗。', 'error');
       console.error('Delete prize error:', err);
     }
   };
@@ -188,11 +188,11 @@ const AdminDashboard = () => {
       // Backend uses POST /admin/prizes for both create and update,
       // distinguishing by the presence of 'id' in the payload.
       await api.post('/admin/prizes', prizeData);
-      showNotification(`Prize ${prizeData.id ? 'updated' : 'added'} successfully.`, 'success');
+      showNotification(`獎品${prizeData.id ? '已更新' : '已新增'}成功。`, 'success');
       setShowPrizeModal(false);
       fetchPrizes();
     } catch (err) {
-      showNotification('Failed to save prize.', 'error');
+      showNotification('儲存獎品失敗。', 'error');
       console.error('Save prize error:', err);
     }
   };
@@ -209,15 +209,15 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteConsolationMessage = async (messageId) => {
-    if (!window.confirm('Are you sure you want to delete this message?')) {
+    if (!window.confirm('您確定要刪除此訊息嗎？')) {
       return;
     }
     try {
       await api.delete(`/admin/consolation-messages/${messageId}`);
-      showNotification('Consolation message deleted successfully.', 'success');
+      showNotification('安慰獎訊息已成功刪除。', 'success');
       fetchConsolationMessages();
     } catch (err) {
-      showNotification('Failed to delete consolation message.', 'error');
+      showNotification('刪除安慰獎訊息失敗。', 'error');
       console.error('Delete consolation message error:', err);
     }
   };
@@ -227,39 +227,39 @@ const AdminDashboard = () => {
       // Backend uses POST /admin/consolation-messages for both create and update,
       // distinguishing by the presence of 'id' in the payload.
       await api.post('/admin/consolation-messages', messageData);
-      showNotification(`Consolation message ${messageData.id ? 'updated' : 'added'} successfully.`, 'success');
+      showNotification(`安慰獎訊息${messageData.id ? '已更新' : '已新增'}成功。`, 'success');
       setShowConsolationModal(false);
       fetchConsolationMessages();
     } catch (err) {
-      showNotification('Failed to save consolation message.', 'error');
+      showNotification('儲存安慰獎訊息失敗。', 'error');
       console.error('Save consolation message error:', err);
     }
   };
 
   if (loading) {
-    return <div className="container">Loading admin dashboard...</div>;
+    return <div className="container">載入管理儀表板中...</div>;
   }
 
   return (
     <div className="container admin-dashboard">
-      <h2>Admin Dashboard</h2>
-      <button onClick={handleLogout} className="logout-button">Logout</button>
+      <h2>管理儀表板</h2>
+      <button onClick={handleLogout} className="logout-button">登出</button>
 
       {error && <p className="error-message">{error}</p>}
       {success && <p className="success-message">{success}</p>}
 
       {/* Prize Management Section */}
       <section className="section">
-        <h3>Prize Management</h3>
-        <button onClick={handleAddPrize}>Add New Prize</button>
+        <h3>獎品管理</h3>
+        <button onClick={handleAddPrize}>新增獎品</button>
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Total Quantity</th>
-              <th>Remaining</th>
-              <th>Probability</th>
-              <th>Actions</th>
+              <th>名稱</th>
+              <th>總數量</th>
+              <th>剩餘數量</th>
+              <th>機率</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -270,8 +270,8 @@ const AdminDashboard = () => {
                 <td>{prize.remaining_quantity}</td>
                 <td>{prize.probability}</td>
                 <td>
-                  <button onClick={() => handleEditPrize(prize)}>Edit</button>
-                  <button onClick={() => handleDeletePrize(prize.id)}>Delete</button>
+                  <button onClick={() => handleEditPrize(prize)}>編輯</button>
+                  <button onClick={() => handleDeletePrize(prize.id)}>刪除</button>
                 </td>
               </tr>
             ))}
@@ -288,15 +288,15 @@ const AdminDashboard = () => {
 
       {/* Consolation Message Management Section */}
       <section className="section">
-        <h3>Consolation Message Management</h3>
-        <button onClick={handleAddConsolationMessage}>Add New Message</button>
+        <h3>安慰獎訊息管理</h3>
+        <button onClick={handleAddConsolationMessage}>新增訊息</button>
         <ul>
           {consolationMessages.map((msg) => (
             <li key={msg.id}>
               {msg.message}
               <div>
-                <button onClick={() => handleEditConsolationMessage(msg)}>Edit</button>
-                <button onClick={() => handleDeleteConsolationMessage(msg.id)}>Delete</button>
+                <button onClick={() => handleEditConsolationMessage(msg)}>編輯</button>
+                <button onClick={() => handleDeleteConsolationMessage(msg.id)}>刪除</button>
               </div>
             </li>
           ))}
@@ -312,10 +312,10 @@ const AdminDashboard = () => {
 
       {/* Activity Settings Section */}
       <section className="section">
-        <h3>Activity Settings</h3>
+        <h3>活動設定</h3>
         <div className="form-group">
           <label>
-            Activity Status: {activityStatus ? 'Public (Unlimited Attempts)' : 'Private (Token Based)'}
+            活動狀態: {activityStatus ? '公開 (無限次嘗試)' : '私人 (基於代幣)'}
             <input
               type="checkbox"
               checked={activityStatus}
@@ -326,10 +326,10 @@ const AdminDashboard = () => {
 
         {!activityStatus && (
           <div className="token-management">
-            <h4>Token Management</h4>
+            <h4>代幣管理</h4>
             <form onSubmit={handleGenerateTokens}>
               <div className="form-group">
-                <label htmlFor="numTokens">Number of Tokens to Generate:</label>
+                <label htmlFor="numTokens">要生成的代幣數量:</label>
                 <input
                   type="number"
                   id="numTokens"
@@ -338,14 +338,14 @@ const AdminDashboard = () => {
                   min="1"
                 />
               </div>
-              <button type="submit">Generate Tokens</button>
+              <button type="submit">生成代幣</button>
             </form>
 
-            <h4>Existing Tokens</h4>
+            <h4>現有代幣</h4>
             <ul>
               {tokens.map((token) => (
                 <li key={token.id}>
-                  {token.token} - {token.is_used ? 'Used' : 'Unused'} {/* Use token.is_used */}
+                  {token.token} - {token.is_used ? '已使用' : '未使用'} {/* Use token.is_used */}
                 </li>
               ))}
             </ul>

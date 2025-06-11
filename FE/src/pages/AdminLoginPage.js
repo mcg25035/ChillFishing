@@ -20,17 +20,17 @@ const AdminLoginPage = () => {
         navigate('/admin/dashboard');
       }
     } catch (err) {
-      setError('Invalid secret identify text.');
+      setError('無效的秘密識別碼。');
       console.error('Login error:', err);
     }
   };
 
   return (
     <div className="container">
-      <h2>Admin Login</h2>
+      <h2>管理員登入</h2>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="secretText">Secret Identify Text:</label>
+          <label htmlFor="secretText">秘密識別碼:</label>
           <input
             type="password"
             id="secretText"
@@ -40,7 +40,7 @@ const AdminLoginPage = () => {
           />
         </div>
         {error && <p className="error-message">{error}</p>}
-        <button type="submit">Login</button>
+        <button type="submit">登入</button>
       </form>
     </div>
   );
