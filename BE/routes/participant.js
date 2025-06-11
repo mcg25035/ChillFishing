@@ -12,7 +12,7 @@ const setIoInstance = (socketIoInstance) => {
 
 // Participant entry
 router.post('/enter', (req, res) => {
-    const { token } = req.body;
+    const { token, name } = req.body; // Receive name
 
     db.get('SELECT is_public FROM settings WHERE id = 1', [], (err, setting) => {
         if (err) {
@@ -25,7 +25,7 @@ router.post('/enter', (req, res) => {
         }
 
         if (setting.is_public) {
-            // Public activity, no token required
+            // Public activity, no token required, name is optional
             return res.json({ success: true, message: 'Entered public activity.' });
         } else {
             // Private activity, token required
@@ -52,10 +52,16 @@ router.post('/enter', (req, res) => {
 
 // Perform raffle draw
 router.post('/raffle', async (req, res) => {
-    const { token, participant_id } = req.body; // participant_id is for logging, token for private activity usage
+    const { token, name } = req.body; // Get name from request body
 
-    if (!participant_id) {
-        return res.status(400).json({ success: false, message: 'Participant ID is required.' });
+    // Determine participant_id based on name or token
+    let participantIdentifier;
+    if (name) {
+        participantIdentifier = name;
+    } else if (token) {
+        participantIdentifier = token.substring(0, 8) + '...'; // Use first 8 chars of token if name is not provided
+    } else {
+        return res.status(400).json({ success: false, message: 'Participant name or token is required.' });
     }
 
     db.get('SELECT is_public FROM settings WHERE id = 1', [], async (err, setting) => {
@@ -91,32 +97,41 @@ router.post('/raffle', async (req, res) => {
                         console.error('Error marking token as used:', err.message);
                         return res.status(500).json({ success: false, message: 'Internal server error.' });
                     }
-                    await executeRaffleLogic(participant_id, res);
+                    // Fetch updated tokens and emit to admin dashboard
+                    db.all('SELECT id, token, is_used FROM tokens', [], (err, updatedTokens) => {
+                        if (err) {
+                            console.error('Error fetching updated tokens:', err.message);
+                            // Continue with raffle logic even if token fetch fails
+                        } else if (io) {
+                            io.emit('tokensUpdated', updatedTokens); // Emit updated tokens to all connected clients
+                        }
+                        executeRaffleLogic(participantIdentifier, res); // Pass participantIdentifier
+                    });
                 });
             });
         } else {
             // Public activity, proceed without token validation
-            await executeRaffleLogic(participant_id, res);
+            await executeRaffleLogic(participantIdentifier, res); // Pass participantIdentifier
         }
     });
 });
 
-const executeRaffleLogic = async (participant_id, res) => {
+const executeRaffleLogic = async (participantIdentifier, res) => { // Renamed participant_id to participantIdentifier
     const raffleState = getRaffleState();
     if (raffleState) {
-        io.emit('raffleLocked'); // Notify clients that raffle is locked
+        io.emit('raffleLocked', true); // Notify clients that raffle is locked
         return res.status(423).json({ success: false, message: 'Raffle is currently locked. Please wait for the next draw.' });
     }
 
     try {
-        const result = await performRaffle(participant_id);
+        const result = await performRaffle(participantIdentifier); // Pass participantIdentifier to performRaffle
         if (result.type === 'locked') {
-            io.emit('raffleLocked'); // Notify clients that raffle is locked
+            io.emit('raffleLocked', true); // Notify clients that raffle is locked
             return res.status(423).json({ success: false, message: result.message });
         }
 
         io.emit('raffleResult', result); // Broadcast to all participants
-        io.emit('displayProjectionResult', { ...result, participant_id }); // Broadcast to projection view
+        io.emit('displayProjectionResult', { ...result, participant_id: participantIdentifier }); // Use participantIdentifier for projection view
 
         res.json({ success: true, result });
     } catch (error) {

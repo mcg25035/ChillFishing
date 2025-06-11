@@ -3,31 +3,19 @@ import api from '../utils/api';
 import socket from '../utils/socket';
 
 const RafflePage = () => {
-  const [raffleLocked, setRaffleLocked] = useState(true);
+  const [raffleLocked, setRaffleLocked] = useState(true); // Assume locked initially, rely on socket for unlock
   const [raffleResult, setRaffleResult] = useState(null);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  const fetchRaffleStatus = useCallback(async () => {
-    try {
-      const response = await api.get('/participant/raffle-status');
-      setRaffleLocked(response.data.isLocked);
-    } catch (err) {
-      setError('Failed to fetch raffle status.');
-      console.error('Fetch raffle status error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // No initial fetch for raffle status, rely solely on Socket.IO events
   useEffect(() => {
-    fetchRaffleStatus();
-
     socket.connect();
 
-    socket.on('raffleLocked', () => {
-      setRaffleLocked(true);
-      setRaffleResult(null); // Clear previous result when locked
+    socket.on('raffleLocked', (isLocked) => {
+      setRaffleLocked(isLocked);
+      if (isLocked) {
+        setRaffleResult(null); // Clear previous result when locked
+      }
     });
 
     socket.on('raffleUnlocked', () => {
@@ -51,14 +39,24 @@ const RafflePage = () => {
       socket.off('connect_error');
       socket.disconnect();
     };
-  }, [fetchRaffleStatus]);
+  }, []); // Empty dependency array as no external dependencies
 
   const handleDrawRaffle = async () => {
     setError('');
     setRaffleResult(null);
     try {
-      const response = await api.post('/participant/draw');
-      setRaffleResult(response.data);
+      // Backend /raffle endpoint expects participant_id and optionally token
+      // For simplicity, we'll assume participant_id is handled by backend session or not strictly required for public
+      // If private, the token would have been used at entry, so we don't need to send it again here for the draw.
+      // However, the backend's /raffle endpoint *does* expect participant_id.
+      const raffleToken = sessionStorage.getItem('raffle_token');
+      // Backend /raffle endpoint expects participant_id and optionally token
+      const participantName = sessionStorage.getItem('participant_name'); // Get participant name from sessionStorage
+      const response = await api.post('/participant/raffle', {
+        name: participantName, // Send participant name
+        token: raffleToken, // Send token if available
+      });
+      setRaffleResult(response.data.result); // Backend returns { success: true, result: ... }
       setRaffleLocked(true); // Lock after drawing
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to draw raffle. Please try again.');
@@ -66,9 +64,7 @@ const RafflePage = () => {
     }
   };
 
-  if (loading) {
-    return <div className="container">Loading raffle status...</div>;
-  }
+  // No loading state based on API fetch, only socket connection
 
   return (
     <div className="container raffle-page">

@@ -3,44 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 const ParticipantEntryPage = () => {
-  const [isPublicActivity, setIsPublicActivity] = useState(false);
   const [token, setToken] = useState('');
+  const [name, setName] = useState(''); // New state for participant name
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchActivityStatus = async () => {
-      try {
-        const response = await api.get('/participant/activity-status');
-        setIsPublicActivity(response.data.isPublic);
-      } catch (err) {
-        setError('Failed to fetch activity status.');
-        console.error('Fetch activity status error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchActivityStatus();
-  }, []);
 
   const handleEnterRaffle = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!isPublicActivity && !token.trim()) {
-      setError('Please enter a token.');
-      return;
-    }
-
     try {
-      const endpoint = isPublicActivity ? '/participant/enter-public' : '/participant/enter-private';
-      const payload = isPublicActivity ? {} : { token };
-      const response = await api.post(endpoint, payload);
+      const response = await api.post('/participant/enter', { token, name }); // Send name along with token
 
       if (response.status === 200) {
-        // Store participant ID if needed for future requests or display
-        // For now, just navigate to raffle page
+        if (token) {
+          sessionStorage.setItem('raffle_token', token);
+        } else {
+          sessionStorage.removeItem('raffle_token');
+        }
+        // Store the participant's name in sessionStorage
+        if (name) {
+          sessionStorage.setItem('participant_name', name);
+        } else {
+          sessionStorage.removeItem('participant_name'); // Clear name if not provided
+        }
         navigate('/raffle');
       }
     } catch (err) {
@@ -49,36 +35,35 @@ const ParticipantEntryPage = () => {
     }
   };
 
-  if (loading) {
-    return <div className="container">Loading activity status...</div>;
-  }
-
   return (
     <div className="container">
       <h2>Welcome to ChillFishing Raffle!</h2>
       {error && <p className="error-message">{error}</p>}
 
-      {isPublicActivity ? (
-        <div className="public-entry">
-          <p>The raffle is currently public. Click below to enter!</p>
-          <button onClick={handleEnterRaffle}>Enter Raffle</button>
+      <form onSubmit={handleEnterRaffle} className="entry-form">
+        <p>Please enter your name and/or token to participate.</p>
+        <div className="form-group">
+          <label htmlFor="name">Your Name (optional):</label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+          />
         </div>
-      ) : (
-        <form onSubmit={handleEnterRaffle} className="private-entry">
-          <p>The raffle is private. Please enter your token to participate.</p>
-          <div className="form-group">
-            <label htmlFor="token">Raffle Token:</label>
-            <input
-              type="text"
-              id="token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit">Enter Raffle</button>
-        </form>
-      )}
+        <div className="form-group">
+          <label htmlFor="token">Raffle Token (optional for public activity):</label>
+          <input
+            type="text"
+            id="token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Enter your token"
+          />
+        </div>
+        <button type="submit">Enter Raffle</button>
+      </form>
     </div>
   );
 };

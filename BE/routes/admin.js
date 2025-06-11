@@ -215,4 +215,18 @@ router.get('/tokens', authenticateAdmin, (req, res) => {
     });
 });
 
+// Get activity status
+router.get('/settings/public', authenticateAdmin, (req, res) => {
+    db.get('SELECT is_public FROM settings WHERE id = 1', [], (err, row) => {
+        if (err) {
+            console.error('Error fetching activity status:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal server error.' });
+        }
+        if (!row) {
+            return res.status(404).json({ success: false, message: 'Activity settings not found.' });
+        }
+        res.json({ is_public: row.is_public });
+    });
+});
+
 module.exports = router;

@@ -49,8 +49,7 @@ const initializeDatabase = () => {
         db.run(`
             CREATE TABLE IF NOT EXISTS settings (
                 id INTEGER PRIMARY KEY DEFAULT 1,
-                is_public BOOLEAN NOT NULL DEFAULT FALSE,
-                secret_identify_text TEXT NOT NULL
+                is_public BOOLEAN NOT NULL DEFAULT FALSE
             )
         `, (err) => {
             if (err) {
@@ -66,8 +65,7 @@ const initializeDatabase = () => {
                     return;
                 }
                 if (row.count === 0) {
-                    // Placeholder for SECRET_IDENTIFY_TEXT, will be updated from .env
-                    db.run(`INSERT INTO settings (id, is_public, secret_identify_text) VALUES (1, FALSE, '')`, (err) => {
+                    db.run(`INSERT INTO settings (id, is_public) VALUES (1, FALSE)`, (err) => {
                         if (err) {
                             console.error('Error inserting default settings:', err.message);
                             return;

@@ -39,7 +39,7 @@ const PrizeForm = ({ prize, onSubmit, onCancel }) => {
     onSubmit({
       id: prize ? prize.id : null,
       name,
-      totalQuantity: parseInt(totalQuantity),
+      total_quantity: parseInt(totalQuantity),
       probability: parseFloat(probability),
     });
   };

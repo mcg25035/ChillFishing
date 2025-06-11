@@ -1,12 +1,12 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { db, initializeDatabase } = require('./db');
 const adminRoutes = require('./routes/admin');
-const { router: participantRoutes, setIoInstance } = require('./routes/participant');
-const { unlockRaffle } = require('./services/raffleService');
+const { router: participantRoutes, setIoInstance: setParticipantIoInstance } = require('./routes/participant');
+const { unlockRaffle, getRaffleState, setIoInstance: setRaffleServiceIoInstance } = require('./services/raffleService'); // Import getRaffleState and setIoInstance
 
 const app = express();
 const server = http.createServer(app);
@@ -29,18 +29,13 @@ if (!SECRET_IDENTIFY_TEXT) {
 app.use(cors());
 app.use(express.json());
 
-// Initialize database and set initial secret_identify_text
+// Initialize database
 initializeDatabase();
-db.run('UPDATE settings SET secret_identify_text = ? WHERE id = 1', [SECRET_IDENTIFY_TEXT], (err) => {
-    if (err) {
-        console.error('Error updating secret_identify_text in settings:', err.message);
-        process.exit(1);
-    }
-    console.log('Secret identify text initialized in database.');
-});
 
 // Pass io instance to participant routes
-setIoInstance(io);
+setParticipantIoInstance(io);
+// Pass io instance to raffle service
+setRaffleServiceIoInstance(io);
 
 // API Routes
 app.use('/api/admin', adminRoutes);
@@ -49,12 +44,14 @@ app.use('/api/participant', participantRoutes);
 // Socket.IO connection handling
 io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
+    // Emit initial raffle state to newly connected client
+    socket.emit('raffleLocked', getRaffleState()); // Send current lock state
 
     socket.on('nextRaffle', (data) => {
         // Authenticate the nextRaffle event from projection view
         if (data && data.secret_identify_text === SECRET_IDENTIFY_TEXT) {
             unlockRaffle();
-            io.emit('raffleUnlocked');
+            io.emit('raffleUnlocked', false);
             console.log('Raffle unlocked by projection view.');
         } else {
             console.warn('Unauthorized attempt to unlock raffle via Socket.IO');

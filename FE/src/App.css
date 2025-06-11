@@ -328,9 +328,10 @@ button:disabled {
 
 .projection-view .next-raffle-button {
   background-color: #3498db;
-  padding: 20px 40px;
-  font-size: 2em;
-  margin-top: 40px;
+  padding: 10px 20px; /* Smaller padding */
+  font-size: 1em; /* Smaller font size */
+  margin-top: 20px; /* Smaller margin */
+  /* Add a specific class for a very small button if needed, or adjust this one */
 }
 
 .projection-view .next-raffle-button:hover {

@@ -1,6 +1,12 @@
 const { db } = require('../db');
+const { Server } = require('socket.io'); // For type hinting
 
+let io; // Socket.IO instance
 let isRaffleLocked = false; // Global raffle state
+
+const setIoInstance = (socketIoInstance) => {
+    io = socketIoInstance;
+};
 
 const getRaffleState = () => {
     return isRaffleLocked;
@@ -14,7 +20,7 @@ const unlockRaffle = () => {
     isRaffleLocked = false;
 };
 
-const performRaffle = async (participantId) => {
+const performRaffle = async (participantIdentifier) => { // Changed participantId to participantIdentifier
     return new Promise((resolve, reject) => {
         if (isRaffleLocked) {
             return resolve({ type: 'locked', message: 'Raffle is currently locked. Please wait.' });
@@ -58,11 +64,23 @@ const performRaffle = async (participantId) => {
                             return reject(err);
                         }
                         const remaining = wonPrize.remaining_quantity - 1;
-                        db.run('INSERT INTO raffle_logs (participant_id, prize_id) VALUES (?, ?)', [participantId, wonPrize.id], (err) => {
+                        db.run('INSERT INTO raffle_logs (participant_id, prize_id) VALUES (?, ?)', [participantIdentifier, wonPrize.id], (err) => { // Use participantIdentifier
                             if (err) {
                                 console.error('Error logging prize raffle:', err.message);
                             }
-                            resolve({ type: 'prize', name: wonPrize.name, remaining: remaining });
+                            unlockRaffle(); // Unlock raffle after successful prize draw
+
+                            // Fetch updated prizes and emit to admin dashboard
+                            db.all('SELECT id, name, total_quantity, remaining_quantity, probability FROM prizes', [], (err, updatedPrizes) => {
+                                if (err) {
+                                    console.error('Error fetching updated prizes:', err.message);
+                                    return resolve({ type: 'prize', prize: { name: wonPrize.name }, remaining: remaining });
+                                }
+                                if (io) {
+                                    io.emit('prizesUpdated', updatedPrizes); // Emit updated prizes to all connected clients
+                                }
+                                resolve({ type: 'prize', prize: { name: wonPrize.name }, remaining: remaining }); // Changed to prize object for consistency
+                            });
                         });
                     });
                 } else {
@@ -76,10 +94,12 @@ const performRaffle = async (participantId) => {
                         consolationMessageId = consolationMessages[Math.floor(Math.random() * consolationMessages.length)].id;
                     }
 
-                    db.run('INSERT INTO raffle_logs (participant_id, consolation_message_id) VALUES (?, ?)', [participantId, consolationMessageId], (err) => {
+                    db.run('INSERT INTO raffle_logs (participant_id, consolation_message_id) VALUES (?, ?)', [participantIdentifier, consolationMessageId], (err) => {
                         if (err) {
                             console.error('Error logging consolation raffle:', err.message);
                         }
+                        unlockRaffle(); // Unlock raffle after consolation message
+                        // No prize update, so no need to emit prizesUpdated here
                         resolve({ type: 'consolation', message: consolationMessage });
                     });
                 }
@@ -89,6 +109,7 @@ const performRaffle = async (participantId) => {
 };
 
 module.exports = {
+    setIoInstance, // Export the new function
     getRaffleState,
     lockRaffle,
     unlockRaffle,

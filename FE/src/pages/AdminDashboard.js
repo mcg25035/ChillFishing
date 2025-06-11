@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import socket from '../utils/socket'; // Import socket
 import { useAuth } from '../context/AuthContext';
 import PrizeForm from '../components/PrizeForm';
 import ConsolationMessageForm from '../components/ConsolationMessageForm';
@@ -28,6 +29,7 @@ const AdminDashboard = () => {
     try {
       const response = await api.get('/admin/prizes');
       setPrizes(response.data);
+      console.log('Fetched prizes:', response.data); // Add console log
     } catch (err) {
       setError('Failed to fetch prizes.');
       console.error('Fetch prizes error:', err);
@@ -46,8 +48,8 @@ const AdminDashboard = () => {
 
   const fetchActivityStatus = useCallback(async () => {
     try {
-      const response = await api.get('/admin/activity-status');
-      setActivityStatus(response.data.isPublic);
+      const response = await api.get('/admin/settings/public');
+      setActivityStatus(response.data.is_public); // Backend returns is_public
     } catch (err) {
       setError('Failed to fetch activity status.');
       console.error('Fetch activity status error:', err);
@@ -58,6 +60,7 @@ const AdminDashboard = () => {
     try {
       const response = await api.get('/admin/tokens');
       setTokens(response.data);
+      console.log('Fetched tokens:', response.data); // Add console log
     } catch (err) {
       setError('Failed to fetch tokens.');
       console.error('Fetch tokens error:', err);
@@ -83,6 +86,29 @@ const AdminDashboard = () => {
     };
 
     loadData();
+
+    // Socket.IO for real-time updates
+    socket.connect();
+    socket.on('prizesUpdated', (updatedPrizes) => {
+      setPrizes(updatedPrizes);
+      showNotification('Prizes updated in real-time.', 'success');
+    });
+
+    socket.on('tokensUpdated', (updatedTokens) => {
+      setTokens(updatedTokens);
+      showNotification('Tokens updated in real-time.', 'success');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error in AdminDashboard:', err);
+      setError('Real-time connection failed. Please refresh.');
+    });
+
+    return () => {
+      socket.off('prizesUpdated');
+      socket.off('connect_error');
+      socket.disconnect();
+    };
   }, [secretIdentifyText, navigate, fetchPrizes, fetchConsolationMessages, fetchActivityStatus, fetchTokens]);
 
   const handleLogout = () => {
@@ -107,7 +133,7 @@ const AdminDashboard = () => {
   const handleToggleActivityStatus = async () => {
     try {
       const newStatus = !activityStatus;
-      await api.post('/admin/activity-status', { isPublic: newStatus });
+      await api.post('/admin/settings/public', { is_public: newStatus });
       setActivityStatus(newStatus);
       showNotification(`Activity set to ${newStatus ? 'public' : 'private'} successfully.`, 'success');
     } catch (err) {
@@ -123,7 +149,7 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      await api.post('/admin/generate-tokens', { count: numTokensToGenerate });
+      await api.post('/admin/tokens/generate', { count: numTokensToGenerate });
       showNotification(`${numTokensToGenerate} tokens generated successfully.`, 'success');
       fetchTokens(); // Refresh token list
     } catch (err) {
@@ -159,13 +185,10 @@ const AdminDashboard = () => {
 
   const handlePrizeSubmit = async (prizeData) => {
     try {
-      if (prizeData.id) {
-        await api.put(`/admin/prizes/${prizeData.id}`, prizeData);
-        showNotification('Prize updated successfully.', 'success');
-      } else {
-        await api.post('/admin/prizes', prizeData);
-        showNotification('Prize added successfully.', 'success');
-      }
+      // Backend uses POST /admin/prizes for both create and update,
+      // distinguishing by the presence of 'id' in the payload.
+      await api.post('/admin/prizes', prizeData);
+      showNotification(`Prize ${prizeData.id ? 'updated' : 'added'} successfully.`, 'success');
       setShowPrizeModal(false);
       fetchPrizes();
     } catch (err) {
@@ -201,13 +224,10 @@ const AdminDashboard = () => {
 
   const handleConsolationMessageSubmit = async (messageData) => {
     try {
-      if (messageData.id) {
-        await api.put(`/admin/consolation-messages/${messageData.id}`, messageData);
-        showNotification('Consolation message updated successfully.', 'success');
-      } else {
-        await api.post('/admin/consolation-messages', messageData);
-        showNotification('Consolation message added successfully.', 'success');
-      }
+      // Backend uses POST /admin/consolation-messages for both create and update,
+      // distinguishing by the presence of 'id' in the payload.
+      await api.post('/admin/consolation-messages', messageData);
+      showNotification(`Consolation message ${messageData.id ? 'updated' : 'added'} successfully.`, 'success');
       setShowConsolationModal(false);
       fetchConsolationMessages();
     } catch (err) {
@@ -246,8 +266,8 @@ const AdminDashboard = () => {
             {prizes.map((prize) => (
               <tr key={prize.id}>
                 <td>{prize.name}</td>
-                <td>{prize.totalQuantity}</td>
-                <td>{prize.remainingQuantity}</td>
+                <td>{prize.total_quantity}</td>
+                <td>{prize.remaining_quantity}</td>
                 <td>{prize.probability}</td>
                 <td>
                   <button onClick={() => handleEditPrize(prize)}>Edit</button>
@@ -325,7 +345,7 @@ const AdminDashboard = () => {
             <ul>
               {tokens.map((token) => (
                 <li key={token.id}>
-                  {token.token} - {token.used ? 'Used' : 'Unused'}
+                  {token.token} - {token.is_used ? 'Used' : 'Unused'} {/* Use token.is_used */}
                 </li>
               ))}
             </ul>

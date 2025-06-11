@@ -12,18 +12,13 @@ const ProjectionViewPage = () => {
   const { secretIdentifyText, login } = useAuth();
   const navigate = useNavigate();
 
-  // Check authentication on component mount
+  // This useEffect will handle socket connection based on isAuthenticated state
   useEffect(() => {
-    if (secretIdentifyText) {
-      // In a real app, you might want to validate this secret with the backend
-      // For now, we assume if it's in localStorage, it's valid for projection view
-      setIsAuthenticated(true);
-      socket.connect(); // Connect socket only if authenticated
+    if (!isAuthenticated) {
+      socket.disconnect(); // Ensure disconnected if not authenticated
+      return;
     }
-  }, [secretIdentifyText]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    socket.connect(); // Connect socket only if authenticated
 
     socket.on('displayProjectionResult', (result) => {
       setDisplayResult(result);
@@ -45,11 +40,10 @@ const ProjectionViewPage = () => {
     e.preventDefault();
     setError('');
     try {
-      const response = await api.post('/admin/login', { secretIdentifyText: secretText });
+      const response = await api.post('/admin/login', { secret_identify_text: secretText });
       if (response.status === 200) {
         login(secretText); // Store the secret text in context and localStorage
-        setIsAuthenticated(true);
-        socket.connect(); // Connect socket after successful login
+        setIsAuthenticated(true); // Set authenticated state only after successful login
       }
     } catch (err) {
       setError('Invalid secret identify text for projection view.');
@@ -63,7 +57,7 @@ const ProjectionViewPage = () => {
       return;
     }
     // Emit nextRaffle event with authentication
-    socket.emit('nextRaffle', { secretIdentifyText });
+    socket.emit('nextRaffle', { secret_identify_text: secretIdentifyText });
     setDisplayResult(null); // Clear current result
     setError('');
   };
@@ -99,7 +93,7 @@ const ProjectionViewPage = () => {
         <div className="result-display">
           {displayResult.type === 'prize' ? (
             <>
-              <p className="projection-prize">Winner: {displayResult.participantId}</p>
+              <p className="projection-prize">Winner: {displayResult.participant_id}</p> {/* Display participant_id */}
               <p className="projection-prize">Won: {displayResult.prize.name}</p>
             </>
           ) : (

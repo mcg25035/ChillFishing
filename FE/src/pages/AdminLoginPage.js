@@ -14,7 +14,7 @@ const AdminLoginPage = () => {
     setError('');
 
     try {
-      const response = await api.post('/admin/login', { secretIdentifyText: secretText });
+      const response = await api.post('/admin/login', { secret_identify_text: secretText });
       if (response.status === 200) {
         login(secretText); // Store the secret text in context and localStorage
         navigate('/admin/dashboard');
