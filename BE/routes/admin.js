@@ -4,6 +4,8 @@ const authenticateAdmin = require('../middleware/auth');
 const { db } = require('../db');
 const { generateUniqueToken } = require('../utils/tokenGenerator');
 
+require('dotenv').config({ path: '.env' });
+
 // Admin Login (initial validation)
 router.post('/login', (req, res) => {
     const { secret_identify_text } = req.body;
@@ -11,16 +13,13 @@ router.post('/login', (req, res) => {
         return res.status(400).json({ success: false, message: 'Secret identify text is required.' });
     }
 
-    db.get('SELECT secret_identify_text FROM settings WHERE id = 1', [], (err, row) => {
-        if (err) {
-            console.error('Database error during login:', err.message);
-            return res.status(500).json({ success: false, message: 'Internal server error.' });
-        }
-        if (!row || row.secret_identify_text !== secret_identify_text) {
-            return res.status(403).json({ success: false, message: 'Invalid secret.' });
-        }
-        res.json({ success: true, message: 'Login successful.' });
-    });
+    let correct_secret = process.env.SECRET_IDENTIFY_TEXT
+
+    if (secret_identify_text !== correct_secret) {
+        return res.status(403).json({ success: false, message: 'Invalid secret identify text.' });
+    }
+
+    res.json({ success: true, message: 'Login successful.' });
 });
 
 // Prize Management
